@@ -5,7 +5,6 @@ const express = require('express');
 const cors = require('cors');
 
 const { env, validateEnv } = require('./config/env');
-const { connectDB, disconnectDB } = require('./config/database');
 const messageRoutes = require('./routes/messageRoutes');
 
 validateEnv();
@@ -90,38 +89,28 @@ app.use((err, req, res, next) => {
 });
 
 // Inicializa o servidor
-async function startServer() {
-  try {
-    // Conecta ao banco de dados
-    await connectDB();
-
-    // Inicia o servidor
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor rodando na porta ${PORT}`);
-      console.log(`🌎 Ambiente: ${env.nodeEnv}`);
-      console.log(`📍 URL: http://localhost:${PORT}`);
-      console.log(`📡 Webhook: http://localhost:${PORT}/api/webhook`);
-      console.log(`📋 Mensagens: http://localhost:${PORT}/api/messages`);
-      console.log(`✉️  Enviar: http://localhost:${PORT}/api/send`);
-      console.log(`💓 Health Check: http://localhost:${PORT}/health`);
-      console.log(`🏓 Ping: http://localhost:${PORT}/ping`);
-    });
-  } catch (error) {
-    console.error('❌ Erro ao iniciar servidor:', error);
-    process.exit(1);
-  }
+function startServer() {
+  // Inicia o servidor
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    console.log(`🌎 Ambiente: ${env.nodeEnv}`);
+    console.log(`📍 URL: http://localhost:${PORT}`);
+    console.log(`📡 Webhook: http://localhost:${PORT}/api/webhook`);
+    console.log(`📋 Mensagens: http://localhost:${PORT}/api/messages`);
+    console.log(`✉️  Enviar: http://localhost:${PORT}/api/send`);
+    console.log(`💓 Health Check: http://localhost:${PORT}/health`);
+    console.log(`🏓 Ping: http://localhost:${PORT}/ping`);
+  });
 }
 
 // Graceful shutdown
-process.on('SIGINT', async () => {
+process.on('SIGINT', () => {
   console.log('\n🛑 Encerrando servidor...');
-  await disconnectDB();
   process.exit(0);
 });
 
-process.on('SIGTERM', async () => {
+process.on('SIGTERM', () => {
   console.log('\n🛑 Encerrando servidor...');
-  await disconnectDB();
   process.exit(0);
 });
 

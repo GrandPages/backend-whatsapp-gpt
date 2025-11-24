@@ -26,46 +26,19 @@ Este documento contém todas as informações necessárias para fazer o deploy d
   - **Start Command:** `npm start`
   - **Ou:** `node src/server.js`
 
-### 5. **Configuração do Banco MySQL**
-- ✅ **Tipo:** MySQL
-- ✅ **Formato da URL:** `mysql://usuario:senha@host:3306/banco`
-- ✅ **SSL:** Recomendado usar SSL (`?sslmode=REQUIRED`)
-- ✅ **Ação:** 
-  1. Acesse o painel da Hostinger
-  2. Vá em **Banco de Dados** > **MySQL**
-  3. Anote:
-     - **Host:** (ex: `mysql.hostinger.com`)
-     - **Usuário:** (ex: `u123456789_user`)
-     - **Senha:** (sua senha)
-     - **Banco:** (ex: `u123456789_db`)
-     - **Porta:** (geralmente `3306`)
-  4. Configure a `DATABASE_URL` no `.env` (veja formato abaixo)
-
-### 6. **Localização do Arquivo .env**
+### 5. **Localização do Arquivo .env**
 - ✅ **Localização:** Na raiz do projeto (mesmo nível do `package.json`)
 - ✅ **Ação:** 
   1. Crie o arquivo `.env` na raiz do projeto na Hostinger
   2. Use o formato fornecido abaixo
   3. **IMPORTANTE:** Não commite o `.env` no Git (já está no `.gitignore`)
 
-### 7. **Permissões e CORS**
+### 6. **Permissões e CORS**
 - ✅ **Permissões:** A Hostinger gerencia automaticamente
 - ✅ **CORS:** Configurado dinamicamente via variável `CORS_ALLOWED_ORIGINS`
 - ✅ **Ação:** Configure `CORS_ALLOWED_ORIGINS` no `.env` com seu domínio:
   ```
   CORS_ALLOWED_ORIGINS=https://seusite.com,https://www.seusite.com
-  ```
-
-### 8. **Prisma e Migrações**
-- ✅ **Antes do deploy:** Execute localmente:
-  ```bash
-  npm run prisma:generate
-  npm run prisma:migrate deploy
-  ```
-- ✅ **Ou na Hostinger:** Após fazer upload, execute via SSH:
-  ```bash
-  npm run prisma:generate
-  npm run prisma:migrate deploy
   ```
 
 ## 🔧 Passo a Passo do Deploy
@@ -76,12 +49,7 @@ Este documento contém todas as informações necessárias para fazer o deploy d
    npm install
    ```
 
-2. ✅ Gere o cliente Prisma:
-   ```bash
-   npm run prisma:generate
-   ```
-
-3. ✅ Teste localmente:
+2. ✅ Teste localmente:
    ```bash
    npm run dev
    ```
@@ -103,8 +71,6 @@ Este documento contém todas as informações necessárias para fazer o deploy d
 4. ✅ Execute via SSH (se disponível):
    ```bash
    npm install
-   npm run prisma:generate
-   npm run prisma:migrate deploy
    ```
 
 ### Passo 4: Configurar Webhook Z-API
@@ -129,23 +95,6 @@ PORT=3000
 
 # Ambiente de execução
 NODE_ENV=production
-
-# ============================================
-# CONFIGURAÇÃO DO BANCO DE DADOS MYSQL (HOSTINGER)
-# ============================================
-# Formato: mysql://USUARIO:SENHA@HOST:PORTA/BANCO
-# 
-# IMPORTANTE: Se a senha contém caracteres especiais, use URL encoding:
-# @ = %40, # = %23, $ = %24, % = %25, & = %26, + = %2B, / = %2F, : = %3A, ? = %3F
-#
-# Exemplo COM SSL (recomendado):
-# DATABASE_URL=mysql://u123456789_user:senha123@mysql.hostinger.com:3306/u123456789_db?sslmode=REQUIRED
-#
-# Exemplo SEM SSL (não recomendado):
-# DATABASE_URL=mysql://u123456789_user:senha123@mysql.hostinger.com:3306/u123456789_db
-#
-# SUBSTITUA pelos seus dados reais da Hostinger:
-DATABASE_URL=mysql://SEU_USUARIO:SUA_SENHA@SEU_HOST:3306/SEU_BANCO?sslmode=REQUIRED
 
 # ============================================
 # CONFIGURAÇÃO OPENAI
@@ -179,35 +128,11 @@ CORS_ALLOWED_ORIGINS=https://seusite.com,https://www.seusite.com
 CORS_ALLOW_CREDENTIALS=false
 ```
 
-## ⚠️ Importante: Formato DATABASE_URL para Hostinger
-
-### Exemplo Real:
-```
-mysql://u123456789_user:MinhaSenh@123@mysql.hostinger.com:3306/u123456789_db?sslmode=REQUIRED
-```
-
-### Se a senha contém caracteres especiais:
-- `@` → `%40`
-- `#` → `%23`
-- `$` → `%24`
-- `%` → `%25`
-- `&` → `%26`
-- `+` → `%2B`
-- `/` → `%2F`
-- `:` → `%3A`
-- `?` → `%3F`
-
-**Exemplo com senha que contém `@`:**
-```
-mysql://usuario:MinhaSenh%40123@host:3306/banco?sslmode=REQUIRED
-```
-
 ## ✅ Validação Final
 
 Após configurar tudo, verifique:
 
 1. ✅ **Variáveis obrigatórias estão definidas:**
-   - `DATABASE_URL`
    - `OPENAI_API_KEY`
    - `ZAPI_INSTANCE_ID`
    - `ZAPI_TOKEN`
@@ -216,15 +141,11 @@ Após configurar tudo, verifique:
    - Acesse: `https://seu-dominio.com/health`
    - Deve retornar status OK
 
-3. ✅ **Banco de dados conecta:**
-   - Verifique os logs do servidor
-   - Deve aparecer: "✅ Banco de dados conectado com sucesso!"
-
-4. ✅ **Webhook funciona:**
+3. ✅ **Webhook funciona:**
    - Envie uma mensagem via WhatsApp
    - Verifique os logs para confirmar processamento
 
-5. ✅ **CORS está configurado:**
+4. ✅ **CORS está configurado:**
    - Teste requisições do seu frontend
    - Não deve haver erros de CORS
 
@@ -234,12 +155,6 @@ Após configurar tudo, verifique:
 - ✅ Verifique se o arquivo `.env` está na raiz do projeto
 - ✅ Confirme que todas as variáveis obrigatórias estão preenchidas
 - ✅ Verifique se não há espaços extras ou aspas desnecessárias
-
-### Erro: "Erro ao conectar ao banco de dados"
-- ✅ Verifique o formato da `DATABASE_URL`
-- ✅ Confirme que as credenciais estão corretas
-- ✅ Teste a conexão MySQL diretamente
-- ✅ Verifique se o SSL está configurado corretamente
 
 ### Erro: "OPENAI_API_KEY não está configurada"
 - ✅ Verifique se a chave está correta no `.env`

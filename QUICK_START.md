@@ -11,11 +11,7 @@ npm install
 # 2. Configurar variáveis de ambiente
 # Copie .env.example para .env e preencha com suas credenciais
 
-# 3. Configurar banco de dados
-npm run prisma:generate
-npm run prisma:migrate
-
-# 4. Iniciar servidor
+# 3. Iniciar servidor
 npm run dev
 ```
 
@@ -28,7 +24,6 @@ PORT=3000
 ZAPI_INSTANCE_ID=seu_instance_id
 ZAPI_TOKEN=seu_token
 OPENAI_API_KEY=sua_chave_openai
-DATABASE_URL="file:./dev.db"
 ```
 
 ## 📡 Configurar Webhook na Z-API

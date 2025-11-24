@@ -13,7 +13,6 @@ npm run dev
 
 Você deve ver:
 ```
-✅ Banco de dados conectado com sucesso!
 🚀 Servidor rodando na porta 3000
 📍 URL: http://localhost:3000
 ```
@@ -88,28 +87,8 @@ O servidor registra todas as ações no console:
 - 📥 Mensagens recebidas
 - 📤 Mensagens enviadas
 - 🤖 Respostas geradas pela IA
-- 💾 Mensagens salvas no banco
-
-## 🗄️ Visualizar Banco de Dados
-
-Para visualizar os dados no banco:
-```bash
-npm run prisma:studio
-```
-
-Isso abrirá uma interface web em `http://localhost:5555` onde você pode ver todas as mensagens.
 
 ## ⚠️ Solução de Problemas
-
-### Erro: "Cannot find module '@prisma/client'"
-```bash
-npm run prisma:generate
-```
-
-### Erro: "Database not found"
-```bash
-npm run prisma:migrate
-```
 
 ### Erro ao enviar mensagem via Z-API
 - Verifique se `ZAPI_INSTANCE_ID` e `ZAPI_TOKEN` estão corretos
@@ -126,5 +105,4 @@ npm run prisma:migrate
 1. Configure o webhook na Z-API com uma URL pública (use ngrok ou similar)
 2. Teste enviando uma mensagem real do WhatsApp
 3. Verifique se a resposta automática foi enviada
-4. Confira as mensagens salvas no banco de dados
 

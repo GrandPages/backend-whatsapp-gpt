@@ -1,4 +1,3 @@
-const { prisma } = require('../config/database');
 const { generateResponse } = require('../services/openaiService');
 const { sendTextMessage } = require('../services/zapiService');
 
@@ -77,24 +76,12 @@ async function handleWebhook(req, res) {
     // Envia resposta via Z-API
     await sendTextMessage(cleanPhoneNumber, aiResponse);
 
-    // Salva no banco de dados
-    const savedMessage = await prisma.message.create({
-      data: {
-        client_name: clientName,
-        phone_number: cleanPhoneNumber,
-        received_message: receivedMessage,
-        sent_message: aiResponse,
-        timestamp: new Date()
-      }
-    });
-
-    console.log(`💾 Mensagem salva no banco de dados com ID: ${savedMessage.id}`);
+    console.log(`✅ Mensagem processada e enviada com sucesso`);
 
     res.status(200).json({
       success: true,
       message: 'Mensagem processada com sucesso',
       data: {
-        id: savedMessage.id,
         phoneNumber: cleanPhoneNumber,
         receivedMessage,
         sentMessage: aiResponse
@@ -111,31 +98,20 @@ async function handleWebhook(req, res) {
 }
 
 /**
- * Retorna todas as mensagens salvas no banco de dados
+ * Retorna informações sobre mensagens (banco de dados removido)
  * @param {Object} req - Request object
  * @param {Object} res - Response object
  */
 async function getMessages(req, res) {
   try {
-    const { limit = 100, offset = 0 } = req.query;
-
-    const messages = await prisma.message.findMany({
-      take: parseInt(limit),
-      skip: parseInt(offset),
-      orderBy: {
-        timestamp: 'desc'
-      }
-    });
-
-    const total = await prisma.message.count();
-
     res.status(200).json({
       success: true,
+      message: 'Banco de dados removido. Mensagens não são mais armazenadas.',
       data: {
-        messages,
-        total,
-        limit: parseInt(limit),
-        offset: parseInt(offset)
+        messages: [],
+        total: 0,
+        limit: 0,
+        offset: 0
       }
     });
 
@@ -170,22 +146,10 @@ async function sendMessage(req, res) {
     // Envia mensagem via Z-API
     const zapiResponse = await sendTextMessage(cleanPhoneNumber, message);
 
-    // Salva no banco de dados (mensagem enviada manualmente)
-    const savedMessage = await prisma.message.create({
-      data: {
-        client_name: null,
-        phone_number: cleanPhoneNumber,
-        received_message: '[Mensagem enviada manualmente]',
-        sent_message: message,
-        timestamp: new Date()
-      }
-    });
-
     res.status(200).json({
       success: true,
       message: 'Mensagem enviada com sucesso',
       data: {
-        id: savedMessage.id,
         phoneNumber: cleanPhoneNumber,
         message,
         zapiResponse

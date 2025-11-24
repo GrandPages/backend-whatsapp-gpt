@@ -20,7 +20,6 @@ if (!process.env.DOTENV_LOADED) {
 }
 
 const REQUIRED_ENV_VARS = [
-  'DATABASE_URL',
   'OPENAI_API_KEY',
   'ZAPI_INSTANCE_ID',
   'ZAPI_TOKEN',
@@ -69,7 +68,6 @@ function parseBoolean(value, defaultValue = false) {
 const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT) || 3000,
-  databaseUrl: process.env.DATABASE_URL,
   cors: {
     allowedOrigins: parseCorsOrigins(),
     allowCredentials: parseBoolean(process.env.CORS_ALLOW_CREDENTIALS, false),

@@ -36,14 +36,6 @@ if [ ! -f .env ]; then
     fi
 fi
 
-# Gera o cliente Prisma
-echo "🔧 Gerando cliente Prisma..."
-npm run prisma:generate
-
-# Executa migrações do banco de dados
-echo "🗄️  Criando banco de dados..."
-npm run prisma:migrate
-
 echo "✅ Inicialização concluída!"
 echo ""
 echo "Para iniciar o servidor, execute:"

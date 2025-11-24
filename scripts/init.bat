@@ -35,14 +35,6 @@ if not exist .env (
     )
 )
 
-REM Gera o cliente Prisma
-echo 🔧 Gerando cliente Prisma...
-call npm run prisma:generate
-
-REM Executa migrações do banco de dados
-echo 🗄️  Criando banco de dados...
-call npm run prisma:migrate
-
 echo ✅ Inicialização concluída!
 echo.
 echo Para iniciar o servidor, execute:
