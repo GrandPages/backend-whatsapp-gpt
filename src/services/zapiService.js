@@ -5,7 +5,7 @@ const { baseUrl, instanceId, token, timeoutMs } = env.zapi;
 
 if (!instanceId || !token) {
   throw new Error(
-    'Variáveis ZAPI_INSTANCE_ID e ZAPI_TOKEN são obrigatórias. Configure o arquivo .env antes de iniciar.'
+    'Variáveis ZAPI_INSTANCE_ID e (ZAPI_API_KEY ou ZAPI_TOKEN) são obrigatórias. Configure o arquivo .env antes de iniciar.'
   );
 }
 

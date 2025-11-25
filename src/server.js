@@ -6,6 +6,7 @@ const cors = require('cors');
 
 const { env, validateEnv } = require('./config/env');
 const messageRoutes = require('./routes/messageRoutes');
+const { sendTextMessage } = require('./services/zapiService');
 
 validateEnv();
 
@@ -67,6 +68,123 @@ app.get('/', (req, res) => {
   });
 });
 
+// Endpoint POST /gancho - Webhook do WhatsApp via Z-API
+app.post('/gancho', async (req, res) => {
+  const timestamp = new Date().toISOString();
+  const horaFormatada = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  
+  try {
+    // Log do body completo recebido
+    console.log('\n═══════════════════════════════════════════════════════════');
+    console.log(`📥 WEBHOOK RECEBIDO - ${horaFormatada}`);
+    console.log(`⏰ Timestamp: ${timestamp}`);
+    console.log('📦 Body completo recebido:');
+    console.log(JSON.stringify(req.body, null, 2));
+    console.log('═══════════════════════════════════════════════════════════\n');
+
+    // Extrai dados do webhook da Z-API
+    const body = req.body || {};
+    
+    // Tenta extrair o número de telefone (vários formatos possíveis)
+    const phone = body.phone || body.phoneNumber || body.from || body.number || 
+                  body.senderPhone || body.phoneSender || null;
+    
+    // Tenta extrair o texto da mensagem (vários formatos possíveis)
+    let messageText = null;
+    
+    // Formato 1: body.message (string direta)
+    if (typeof body.message === 'string') {
+      messageText = body.message;
+    }
+    // Formato 2: body.message.text
+    else if (body.message && typeof body.message === 'object' && body.message.text) {
+      messageText = body.message.text;
+    }
+    // Formato 3: body.text
+    else if (body.text) {
+      messageText = body.text;
+    }
+    // Formato 4: body.body
+    else if (body.body) {
+      messageText = body.body;
+    }
+    // Formato 5: body.messageText
+    else if (body.messageText) {
+      messageText = body.messageText;
+    }
+    // Formato 6: body.content
+    else if (body.content) {
+      messageText = body.content;
+    }
+
+    // Verifica se é uma mensagem de texto válida
+    if (!phone || !messageText || messageText.trim() === '') {
+      console.warn('⚠️  AVISO: Webhook recebido mas sem mensagem de texto válida');
+      console.warn(`   Phone: ${phone || 'NÃO ENCONTRADO'}`);
+      console.warn(`   Texto: ${messageText || 'NÃO ENCONTRADO'}`);
+      console.warn('   Retornando 200 para não travar a Z-API\n');
+      
+      return res.status(200).json({ 
+        status: "ok",
+        message: "Webhook recebido mas sem mensagem de texto válida para processar"
+      });
+    }
+
+    // Remove caracteres especiais do número (deixa apenas dígitos)
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    // Log da mensagem detectada
+    console.log(`📨 MENSAGEM DETECTADA:`);
+    console.log(`   De: ${cleanPhone}`);
+    console.log(`   Texto: ${messageText}`);
+    console.log('');
+
+    // Envia resposta automática via Z-API
+    try {
+      const respostaAutomatica = `Olá! Recebi sua mensagem: "${messageText}". Esta é uma resposta automática do webhook.`;
+      
+      console.log(`📤 Enviando resposta automática para ${cleanPhone}...`);
+      await sendTextMessage(cleanPhone, respostaAutomatica);
+      console.log(`✅ Resposta enviada com sucesso!\n`);
+      
+    } catch (errorEnvio) {
+      console.error('❌ ERRO ao enviar resposta via Z-API:');
+      console.error(`   ${errorEnvio.message}`);
+      if (errorEnvio.response) {
+        console.error(`   Status: ${errorEnvio.response.status}`);
+        console.error(`   Data: ${JSON.stringify(errorEnvio.response.data)}`);
+      }
+      console.error('');
+      // Não lança erro - continua e retorna 200 para não travar o webhook
+    }
+
+    // Sempre retorna 200 para a Z-API não travar
+    return res.status(200).json({ 
+      status: "ok",
+      message: "Webhook processado com sucesso",
+      data: {
+        phone: cleanPhone,
+        receivedMessage: messageText,
+        timestamp
+      }
+    });
+
+  } catch (error) {
+    // Captura qualquer erro não tratado
+    console.error('❌ ERRO CRÍTICO no webhook:');
+    console.error(`   ${error.message}`);
+    console.error(`   Stack: ${error.stack}`);
+    console.error('');
+    
+    // SEMPRE retorna 200 mesmo em caso de erro para não travar a Z-API
+    return res.status(200).json({ 
+      status: "ok",
+      message: "Webhook recebido (erro interno tratado)",
+      error: error.message
+    });
+  }
+});
+
 app.use('/api', messageRoutes);
 
 // Rota de ping para testes simples
@@ -96,6 +214,7 @@ function startServer() {
     console.log(`🌎 Ambiente: ${env.nodeEnv}`);
     console.log(`📍 URL: http://localhost:${PORT}`);
     console.log(`📡 Webhook: http://localhost:${PORT}/api/webhook`);
+    console.log(`🎣 Gancho Z-API: http://localhost:${PORT}/gancho`);
     console.log(`📋 Mensagens: http://localhost:${PORT}/api/messages`);
     console.log(`✉️  Enviar: http://localhost:${PORT}/api/send`);
     console.log(`💓 Health Check: http://localhost:${PORT}/health`);

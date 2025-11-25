@@ -22,7 +22,7 @@ if (!process.env.DOTENV_LOADED) {
 const REQUIRED_ENV_VARS = [
   'OPENAI_API_KEY',
   'ZAPI_INSTANCE_ID',
-  'ZAPI_TOKEN',
+  // Aceita ZAPI_API_KEY ou ZAPI_TOKEN (validação customizada abaixo)
 ];
 
 function validateEnv(customRequired) {
@@ -36,6 +36,16 @@ function validateEnv(customRequired) {
     const value = process.env[name];
     return value === undefined || value === null || value === '';
   });
+
+  // Validação customizada para ZAPI_TOKEN/ZAPI_API_KEY
+  if (!customRequired) {
+    if (!process.env.ZAPI_INSTANCE_ID) {
+      missing.push('ZAPI_INSTANCE_ID');
+    }
+    if (!process.env.ZAPI_API_KEY && !process.env.ZAPI_TOKEN) {
+      missing.push('ZAPI_API_KEY ou ZAPI_TOKEN');
+    }
+  }
 
   if (missing.length > 0) {
     throw new Error(
@@ -89,7 +99,8 @@ const env = {
   zapi: {
     baseUrl: process.env.ZAPI_BASE_URL || 'https://api.z-api.io',
     instanceId: process.env.ZAPI_INSTANCE_ID,
-    token: process.env.ZAPI_TOKEN,
+    // Suporta ZAPI_API_KEY ou ZAPI_TOKEN (ZAPI_API_KEY tem prioridade)
+    token: process.env.ZAPI_API_KEY || process.env.ZAPI_TOKEN,
     timeoutMs: Number(process.env.ZAPI_TIMEOUT_MS) || 60000,
   },
 };
