@@ -91,34 +91,46 @@ app.post('/gancho', async (req, res) => {
     
     // Tenta extrair o texto da mensagem (vários formatos possíveis)
     let messageText = null;
-    
+
     // Formato 1: body.message (string direta)
     if (typeof body.message === 'string') {
       messageText = body.message;
     }
     // Formato 2: body.message.text
-    else if (body.message && typeof body.message === 'object' && body.message.text) {
+    else if (body.message && typeof body.message.text === 'string') {
       messageText = body.message.text;
     }
-    // Formato 3: body.text
-    else if (body.text) {
+    // Formato 3: body.text (string direta)
+    else if (typeof body.text === 'string') {
       messageText = body.text;
     }
-    // Formato 4: body.body
+    // Formato 4: body.text.message (formato usado pela Z-API no meu payload)
+    else if (body.text && typeof body.text.message === 'string') {
+      messageText = body.text.message;
+    }
+    // Formato 5: body.body
     else if (body.body) {
       messageText = body.body;
     }
-    // Formato 5: body.messageText
+    // Formato 6: body.messageText
     else if (body.messageText) {
       messageText = body.messageText;
     }
-    // Formato 6: body.content
+    // Formato 7: body.content
     else if (body.content) {
       messageText = body.content;
     }
 
+    if (typeof messageText !== 'string') {
+      console.log("❌ Nenhum texto de mensagem encontrado.");
+      return res.sendStatus(200);
+    }
+
+    messageText = messageText.trim();
+    console.log("📩 Texto detectado:", messageText);
+
     // Verifica se é uma mensagem de texto válida
-    if (!phone || !messageText || messageText.trim() === '') {
+    if (!phone || !messageText || messageText === '') {
       console.warn('⚠️  AVISO: Webhook recebido mas sem mensagem de texto válida');
       console.warn(`   Phone: ${phone || 'NÃO ENCONTRADO'}`);
       console.warn(`   Texto: ${messageText || 'NÃO ENCONTRADO'}`);
