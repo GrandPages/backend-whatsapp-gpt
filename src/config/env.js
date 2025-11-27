@@ -93,7 +93,7 @@ const env = {
     apiUrl:
       process.env.OPENAI_API_URL ||
       'https://api.openai.com/v1',
-    model: process.env.OPENAI_MODEL || 'gpt-4o',
+    model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
     timeoutMs: Number(process.env.OPENAI_TIMEOUT_MS) || 60000,
   },
   zapi: {
