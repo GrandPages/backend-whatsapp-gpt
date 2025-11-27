@@ -7,6 +7,7 @@ const cors = require('cors');
 const { env, validateEnv } = require('./config/env');
 const messageRoutes = require('./routes/messageRoutes');
 const { sendTextMessage } = require('./services/zapiService');
+const { generateResponse } = require('./services/openaiService');
 
 validateEnv();
 
@@ -121,9 +122,14 @@ app.post('/gancho', async (req, res) => {
       messageText = body.content;
     }
 
+    // Verifica se encontrou algum texto
     if (typeof messageText !== 'string') {
-      console.log("❌ Nenhum texto de mensagem encontrado.");
-      return res.sendStatus(200);
+      console.log("⚠️  Nenhum texto de mensagem encontrado no webhook.");
+      console.log("   Retornando 200 para não travar a Z-API\n");
+      return res.status(200).json({ 
+        status: "ok",
+        message: "Webhook recebido mas sem mensagem de texto"
+      });
     }
 
     messageText = messageText.trim();
@@ -145,29 +151,85 @@ app.post('/gancho', async (req, res) => {
     // Remove caracteres especiais do número (deixa apenas dígitos)
     const cleanPhone = phone.replace(/\D/g, '');
     
+    // Verifica se é mensagem do próprio bot (evita loop)
+    const isFromMe = body.fromMe || body.isFromMe || body.from_me || false;
+    if (isFromMe) {
+      console.log('⚠️  Mensagem do próprio bot ignorada (evita loop)');
+      return res.status(200).json({ 
+        status: "ok",
+        message: "Mensagem do próprio bot ignorada"
+      });
+    }
+
+    // Verifica se é mensagem de sistema (status, etc)
+    const isSystemMessage = body.type === 'status' || 
+                           body.type === 'system' || 
+                           body.messageType === 'status' ||
+                           body.messageType === 'system' ||
+                           messageText.startsWith('status@') ||
+                           messageText.toLowerCase().includes('status');
+    
+    if (isSystemMessage) {
+      console.log('⚠️  Mensagem de sistema ignorada');
+      return res.status(200).json({ 
+        status: "ok",
+        message: "Mensagem de sistema ignorada"
+      });
+    }
+
+    // Verifica se a mensagem está vazia após trim
+    if (messageText.length === 0) {
+      console.log('⚠️  Mensagem vazia ignorada');
+      return res.status(200).json({ 
+        status: "ok",
+        message: "Mensagem vazia ignorada"
+      });
+    }
+    
     // Log da mensagem detectada
-    console.log(`📨 MENSAGEM DETECTADA:`);
+    console.log(`📨 MENSAGEM VÁLIDA DETECTADA:`);
     console.log(`   De: ${cleanPhone}`);
     console.log(`   Texto: ${messageText}`);
     console.log('');
 
-    // Envia resposta automática via Z-API
+    // ETAPA 1: Envia mensagem para a OpenAI
+    let aiResponse = null;
     try {
-      const respostaAutomatica = `Olá! Recebi sua mensagem: "${messageText}". Esta é uma resposta automática do webhook.`;
-      
-      console.log(`📤 Enviando resposta automática para ${cleanPhone}...`);
-      await sendTextMessage(cleanPhone, respostaAutomatica);
-      console.log(`✅ Resposta enviada com sucesso!\n`);
-      
-    } catch (errorEnvio) {
-      console.error('❌ ERRO ao enviar resposta via Z-API:');
-      console.error(`   ${errorEnvio.message}`);
-      if (errorEnvio.response) {
-        console.error(`   Status: ${errorEnvio.response.status}`);
-        console.error(`   Data: ${JSON.stringify(errorEnvio.response.data)}`);
+      console.log('🤖 Enviando mensagem para OpenAI...');
+      const clientName = body.name || body.clientName || body.senderName || null;
+      aiResponse = await generateResponse(messageText, clientName);
+      console.log(`✅ Resposta da OpenAI recebida: ${aiResponse.substring(0, 100)}${aiResponse.length > 100 ? '...' : ''}\n`);
+    } catch (errorOpenAI) {
+      console.error('❌ ERRO ao chamar OpenAI:');
+      console.error(`   Mensagem: ${errorOpenAI.message}`);
+      if (errorOpenAI.response) {
+        console.error(`   Status: ${errorOpenAI.response.status}`);
+        console.error(`   Data: ${JSON.stringify(errorOpenAI.response.data, null, 2)}`);
       }
       console.error('');
-      // Não lança erro - continua e retorna 200 para não travar o webhook
+      
+      // Define uma mensagem de fallback
+      aiResponse = 'Desculpe, não consegui processar sua mensagem no momento. Por favor, tente novamente mais tarde.';
+    }
+
+    // ETAPA 2: Envia resposta da IA para o WhatsApp via Z-API
+    if (aiResponse && aiResponse.trim().length > 0) {
+      try {
+        console.log(`📤 Enviando resposta para ${cleanPhone} via Z-API...`);
+        await sendTextMessage(cleanPhone, aiResponse);
+        console.log(`✅ Resposta enviada com sucesso para o WhatsApp!\n`);
+      } catch (errorZAPI) {
+        console.error('❌ ERRO ao enviar resposta via Z-API:');
+        console.error(`   Mensagem: ${errorZAPI.message}`);
+        if (errorZAPI.response) {
+          console.error(`   Status: ${errorZAPI.response.status}`);
+          console.error(`   Data: ${JSON.stringify(errorZAPI.response.data, null, 2)}`);
+        }
+        console.error('');
+        // Não lança erro - continua e retorna 200 para não travar o webhook
+      }
+    } else {
+      console.warn('⚠️  Resposta da IA está vazia, não enviando para Z-API');
     }
 
     // Sempre retorna 200 para a Z-API não travar
@@ -177,6 +239,7 @@ app.post('/gancho', async (req, res) => {
       data: {
         phone: cleanPhone,
         receivedMessage: messageText,
+        aiResponse: aiResponse ? aiResponse.substring(0, 100) : null,
         timestamp
       }
     });

@@ -92,7 +92,7 @@ const env = {
     apiKey: process.env.OPENAI_API_KEY,
     apiUrl:
       process.env.OPENAI_API_URL ||
-      'https://api.openai.com/v1/chat/completions',
+      'https://api.openai.com/v1',
     model: process.env.OPENAI_MODEL || 'gpt-4o',
     timeoutMs: Number(process.env.OPENAI_TIMEOUT_MS) || 60000,
   },

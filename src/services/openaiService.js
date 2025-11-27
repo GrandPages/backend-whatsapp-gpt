@@ -9,8 +9,14 @@ if (!apiKey) {
   );
 }
 
+// Normaliza a URL da API - se for a URL completa, extrai apenas a base
+let baseURL = apiUrl;
+if (apiUrl.includes('/chat/completions')) {
+  baseURL = apiUrl.replace('/chat/completions', '');
+}
+
 const openaiClient = axios.create({
-  baseURL: apiUrl,
+  baseURL: baseURL,
   timeout: timeoutMs,
   headers: {
     Authorization: `Bearer ${apiKey}`,
@@ -26,6 +32,10 @@ const openaiClient = axios.create({
  */
 async function generateResponse(userMessage, clientName = null) {
   try {
+    console.log('🤖 Iniciando chamada para OpenAI...');
+    console.log(`   Modelo: ${model}`);
+    console.log(`   Mensagem do usuário: ${userMessage.substring(0, 100)}${userMessage.length > 100 ? '...' : ''}`);
+    
     const systemPrompt = `Você é um assistente virtual inteligente e prestativo. 
 Responda de forma clara, concisa e amigável. 
 Seja útil e profissional em todas as interações.`;
@@ -34,7 +44,7 @@ Seja útil e profissional em todas as interações.`;
       ? `${clientName} disse: ${userMessage}`
       : userMessage;
 
-    const response = await openaiClient.post('', {
+    const requestPayload = {
       model,
       messages: [
         {
@@ -48,17 +58,37 @@ Seja útil e profissional em todas as interações.`;
       ],
       max_tokens: 500,
       temperature: 0.7,
-    });
+    };
+
+    console.log('📤 Enviando requisição para OpenAI...');
+    const response = await openaiClient.post('/chat/completions', requestPayload);
+
+    if (!response.data || !response.data.choices || !response.data.choices[0]) {
+      throw new Error('Resposta inválida da OpenAI');
+    }
 
     const aiResponse = response.data.choices[0].message.content;
-    console.log(`🤖 Resposta gerada pela OpenAI:`, aiResponse);
+    
+    // Log detalhado da resposta
+    console.log('✅ Resposta recebida da OpenAI:');
+    console.log(`   Tokens usados: ${response.data.usage?.total_tokens || 'N/A'}`);
+    console.log(`   Resposta: ${aiResponse.substring(0, 200)}${aiResponse.length > 200 ? '...' : ''}`);
     
     return aiResponse.trim();
   } catch (error) {
-    console.error('❌ Erro ao gerar resposta com OpenAI:', error.response?.data || error.message);
+    console.error('❌ ERRO ao gerar resposta com OpenAI:');
+    console.error(`   Mensagem: ${error.message}`);
+    if (error.response) {
+      console.error(`   Status: ${error.response.status}`);
+      console.error(`   Data: ${JSON.stringify(error.response.data, null, 2)}`);
+    }
+    if (error.request) {
+      console.error(`   Request feito mas sem resposta`);
+    }
+    console.error(`   Stack: ${error.stack}`);
     
     // Retorna uma mensagem padrão em caso de erro
-    return 'Desculpe, não consegui processar sua mensagem no momento. Por favor, tente novamente mais tarde.';
+    throw error; // Lança o erro para que o chamador possa tratá-lo
   }
 }
 
